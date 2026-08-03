@@ -150,15 +150,26 @@ export const riderService = {
   async findByCredentials(phone: string, password: string): Promise<RiderRegistration | null> {
     const firestore = getDb();
     if (!firestore) return null;
-    const q = query(
-      collection(firestore, 'riders'),
-      where('status', '==', 'approved'),
-      where('phone', '==', phone),
-      where('password', '==', password)
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as RiderRegistration;
+    try {
+      // Use single where clause (no composite index needed) then filter client-side
+      const q = query(
+        collection(firestore, 'riders'),
+        where('phone', '==', phone)
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) return null;
+      // Filter for approved + matching password client-side
+      const match = snapshot.docs.find(d => {
+        const data = d.data();
+        return data.status === 'approved' &&
+          (data.password === password || data.password?.toUpperCase() === password.toUpperCase());
+      });
+      if (!match) return null;
+      return { id: match.id, ...match.data() } as RiderRegistration;
+    } catch (err) {
+      console.error('[findByCredentials] Firestore error:', err);
+      return null;
+    }
   },
 
   onAll(callback: (riders: RiderRegistration[]) => void) {
