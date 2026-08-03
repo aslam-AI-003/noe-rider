@@ -109,14 +109,17 @@ export const vendorService = {
 // RIDER SERVICE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export const riderService = {
-  async create(rider: Omit<RiderRegistration, 'id'>): Promise<string | null> {
+  async create(rider: any): Promise<string | null> {
     const firestore = getDb();
     if (!firestore) return null;
-    const docRef = await addDoc(collection(firestore, 'riders'), {
+    // Use setDoc with rider's own id so admin can reference the same document
+    const riderId = rider.id || ('rider-reg-' + Date.now().toString(36));
+    await setDoc(doc(firestore, 'riders', riderId), {
       ...rider,
+      id: riderId,
       createdAt: serverTimestamp(),
     });
-    return docRef.id;
+    return riderId;
   },
 
   async getAll(): Promise<RiderRegistration[]> {
