@@ -15,7 +15,7 @@ export default function RiderLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!phone || !password) {
       toast.error('Enter phone number and Rider ID');
       return;
@@ -23,21 +23,41 @@ export default function RiderLoginPage() {
 
     setLoading(true);
 
-    setTimeout(() => {
+    try {
       const state = useStore.getState();
       const allRiders = state.riderRegistrations;
 
+      // First check local Zustand store
       let rider = allRiders.find(
         r => r.status === 'approved' && r.phone === phone.trim() && r.password === password.trim()
       );
 
-      // Fallback: case-insensitive
+      // Fallback: case-insensitive local check
       if (!rider) {
         rider = allRiders.find(
           r => r.status === 'approved' &&
                r.phone === phone.trim() &&
                r.password?.toUpperCase() === password.trim().toUpperCase()
         );
+      }
+
+      // If not found locally, check Firestore (rider may have been approved on admin side)
+      if (!rider) {
+        console.log('[Rider Login] Not found locally, checking Firestore...');
+        const firestoreRider = await riderService.findByCredentials(phone.trim(), password.trim());
+        if (firestoreRider) {
+          rider = firestoreRider;
+          // Sync to local store for future logins
+          state.addRiderRegistration(firestoreRider);
+        }
+        // Also try case-insensitive with Firestore (riderId is uppercase)
+        if (!rider) {
+          const firestoreRider2 = await riderService.findByCredentials(phone.trim(), password.trim().toUpperCase());
+          if (firestoreRider2) {
+            rider = firestoreRider2;
+            state.addRiderRegistration(firestoreRider2);
+          }
+        }
       }
 
       if (rider) {
@@ -57,13 +77,16 @@ export default function RiderLoginPage() {
       } else {
         toast.error('Invalid credentials. Check phone & Rider ID.');
         console.log('[Rider Login] Entered:', { phone: phone.trim(), password: password.trim() });
-        console.log('[Rider Login] Available:', allRiders.map(r => ({
+        console.log('[Rider Login] Available locally:', allRiders.map(r => ({
           phone: r.phone, password: r.password, status: r.status, riderId: r.riderId
         })));
       }
+    } catch (err) {
+      console.error('[Rider Login] Error:', err);
+      toast.error('Login failed. Please try again.');
+    }
 
-      setLoading(false);
-    }, 800);
+    setLoading(false);
   };
 
   return (
