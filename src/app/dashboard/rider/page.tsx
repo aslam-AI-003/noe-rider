@@ -67,16 +67,18 @@ export default function RiderDashboard() {
   const gpsWatchRef = useRef<number | null>(null);
 
   const riderId = user?.uid || 'rider-001';
+  const [availableOrders, setAvailableOrders] = useState<any[]>([]);
+  const [myOrders, setMyOrders] = useState<any[]>([]);
 
   // Rider sees orders assigned to them (ready, picked_up, on_the_way)
-  const riderOrders = demoOrders.filter(o =>
-    ['ready', 'picked_up', 'on_the_way'].includes(o.status) && o.riderId === riderId
+  const riderOrders = myOrders.filter(o =>
+    ['ready', 'picked_up', 'on_the_way'].includes(o.status)
   );
-  const deliveredOrders = demoOrders.filter(o => o.status === 'delivered' && o.riderId === riderId);
+  const deliveredOrders = myOrders.filter(o => o.status === 'delivered');
   const activeOrder = riderOrders[0];
 
   // New delivery alert
-  const readyCount = riderOrders.filter(o => o.status === 'ready').length;
+  const readyCount = availableOrders.length + riderOrders.filter(o => o.status === 'ready').length;
 
   // ━━━ GPS: Track rider's live location ━━━
   useEffect(() => {
@@ -98,15 +100,19 @@ export default function RiderDashboard() {
       );
     }
 
-    // Subscribe to real-time Firestore orders for this rider
+    // Subscribe to real-time Firestore: my assigned orders + available orders
     if (riderId) {
-      const unsub = orderService.onRiderOrders(riderId, (firestoreOrders) => {
-        if (firestoreOrders.length > 0) {
-          console.log('🔄 Firestore rider orders synced:', firestoreOrders.length);
-        }
+      const unsubMy = orderService.onRiderOrders(riderId, (firestoreOrders) => {
+        setMyOrders(firestoreOrders);
+      });
+      const unsubAvailable = orderService.onAvailableOrders((orders) => {
+        // Filter out orders this rider already rejected
+        const filtered = orders.filter((o: any) => !o[`rejectedBy_${riderId}`]);
+        setAvailableOrders(filtered);
       });
       return () => {
-        unsub();
+        unsubMy();
+        unsubAvailable();
         if (gpsWatchRef.current !== null) navigator.geolocation.clearWatch(gpsWatchRef.current);
       };
     }
@@ -251,6 +257,61 @@ export default function RiderDashboard() {
             </div>
           </div>
         </div>
+
+        {/* 🔔 Available Orders — Accept/Reject */}
+        {availableOrders.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-bold text-body flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+              New Delivery Requests ({availableOrders.length})
+            </h2>
+            {availableOrders.map((order: any) => (
+              <div key={order.id} className="glass-card p-4 border-l-4 border-orange-500 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black text-body">{order.orderId || `#${order.id.slice(0,8)}`}</p>
+                    <p className="text-xs text-muted">{order.shopName}</p>
+                  </div>
+                  <p className="text-lg font-black text-accent">₹{order.totalAmount || order.total}</p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-faint">
+                  <MapPin size={10} /> {order.deliveryAddress || 'Nearby'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted">
+                  <Package size={12} /> {order.items?.length || 0} items • {(order.paymentMethod || 'cod').toUpperCase()}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        await orderService.acceptOrder(order.id, {
+                          riderId,
+                          riderName: user?.displayName || 'Rider',
+                          riderPhone: user?.phone || '9876543210',
+                        });
+                        toast.success('🎉 Order accepted! Head to pickup');
+                      } catch (e) { toast.error('Failed to accept'); }
+                    }}
+                    className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all active:scale-95"
+                  >
+                    ✅ Accept
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await orderService.rejectOrder(order.id, riderId);
+                        toast('Order skipped', { icon: '⏭️' });
+                      } catch (e) { toast.error('Failed'); }
+                    }}
+                    className="px-4 py-3 bg-red-500/10 text-red-500 rounded-xl text-sm font-bold hover:bg-red-500/20 transition-all"
+                  >
+                    ✕ Skip
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Active delivery */}
         {activeOrder ? (

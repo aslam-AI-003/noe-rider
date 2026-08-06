@@ -302,7 +302,7 @@ export const orderService = {
     });
   },
 
-  // Real-time listener for rider orders
+  // Real-time listener for rider's assigned orders
   onRiderOrders(riderId: string, callback: (orders: DemoOrder[]) => void) {
     const firestore = getDb();
     if (!firestore) return () => {};
@@ -313,6 +313,47 @@ export const orderService = {
     return onSnapshot(q, (snapshot) => {
       const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DemoOrder));
       callback(orders);
+    });
+  },
+
+  // Real-time listener for available orders (riderStatus = 'searching')
+  onAvailableOrders(callback: (orders: DemoOrder[]) => void) {
+    const firestore = getDb();
+    if (!firestore) return () => {};
+    const q = query(
+      collection(firestore, 'orders'),
+      where('riderStatus', '==', 'searching')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DemoOrder));
+      callback(orders);
+    });
+  },
+
+  // Rider accepts an order
+  async acceptOrder(orderId: string, riderInfo: { riderId: string; riderName: string; riderPhone: string }) {
+    const firestore = getDb();
+    if (!firestore) return;
+    const orderRef = doc(firestore, 'orders', orderId);
+    await updateDoc(orderRef, {
+      riderId: riderInfo.riderId,
+      riderName: riderInfo.riderName,
+      riderPhone: riderInfo.riderPhone,
+      riderStatus: 'assigned',
+      riderAssignedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  // Rider rejects an order (sets back to searching)
+  async rejectOrder(orderId: string, riderId: string) {
+    const firestore = getDb();
+    if (!firestore) return;
+    const orderRef = doc(firestore, 'orders', orderId);
+    await updateDoc(orderRef, {
+      riderStatus: 'searching',
+      [`rejectedBy_${riderId}`]: true, // Track which riders rejected
+      updatedAt: serverTimestamp(),
     });
   },
 
