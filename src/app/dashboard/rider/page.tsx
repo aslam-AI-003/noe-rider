@@ -144,16 +144,24 @@ export default function RiderDashboard() {
 
   const handleStatusChange = (orderId: string, newStatus: DemoOrder['status']) => {
     if (newStatus === 'delivered') {
-      // Show OTP verification modal
-      const otp = generateOTP();
-      setCurrentOTP(otp);
+      // Read OTP from Firestore order doc (set by customer at checkout)
+      const order = myOrders.find(o => o.id === orderId) || availableOrders.find(o => o.id === orderId);
+      const firestoreOtp = (order as any)?.deliveryOtp || '';
+      setCurrentOTP(firestoreOtp);
       setDeliveryOrderId(orderId);
       setOtpInput('');
       setShowOTPModal(true);
-      // Show OTP to customer (in real app, this would be SMS)
-      toast(`Customer's OTP: ${otp}`, { icon: '🔐', duration: 10000,
-        style: { fontWeight: 'bold', background: '#1e293b', color: '#fff' }
-      });
+      // Hint for rider (in dev mode)
+      if (firestoreOtp) {
+        toast(`Ask customer for OTP`, { icon: '🔐', duration: 5000 });
+      } else {
+        // Fallback: generate if no OTP in Firestore (old orders)
+        const fallbackOtp = generateOTP();
+        setCurrentOTP(fallbackOtp);
+        toast(`Dev OTP: ${fallbackOtp}`, { icon: '🔐', duration: 10000,
+          style: { fontWeight: 'bold', background: '#1e293b', color: '#fff' }
+        });
+      }
       return;
     }
 
@@ -172,13 +180,13 @@ export default function RiderDashboard() {
       if (deliveryOrderId) {
         updateDemoOrderStatus(deliveryOrderId, 'delivered');
         // Sync to Firestore
-        orderService.updateStatus(deliveryOrderId, 'delivered').catch(() => {});
+        orderService.updateStatus(deliveryOrderId, 'delivered', { deliveredAt: new Date().toISOString() }).catch(() => {});
         toast.success('Delivery completed! ₹45 earned 💰');
       }
       setShowOTPModal(false);
       setDeliveryOrderId(null);
     } else {
-      toast.error('Wrong OTP! Ask customer again.');
+      toast.error('Wrong OTP! Ask customer for correct OTP.');
     }
   };
 
