@@ -10,10 +10,10 @@
 
 /* ━━━━ LIGHT THEME (default) ━━━━ */
 :root, .light {
-  --yellow: #F59E0B;
+  --yellow: #0E9F6E;
   --yellow-dark: #D97706;
-  --orange: #F97316;
-  --orange-dark: #EA580C;
+  --orange: #0E9F6E;
+  --orange-dark: #087f58;
   --bg: #FFFFFF;
   --bg2: #FAFAF9;
   --bg3: #F3F4F6;
@@ -58,9 +58,9 @@
 /* ━━━━ DARK THEME (secondary, via toggle) ━━━━ */
 .dark {
   --yellow: #FBBF24;
-  --yellow-dark: #F59E0B;
-  --orange: #FB923C;
-  --orange-dark: #F97316;
+  --yellow-dark: #0E9F6E;
+  --orange: #0E9F6E;
+  --orange-dark: #0E9F6E;
   --bg: #0B0B0D;
   --bg2: #111114;
   --bg3: #17171B;
@@ -225,7 +225,7 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #FB923C, #F97316);
+  background: linear-gradient(135deg, #FB923C, #0E9F6E);
   color: #fff;
   font-weight: 800;
   font-size: 14px;
@@ -372,7 +372,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0;
-  background: rgba(249,115,22,0.08);
+  background: rgba(14,159,110,0.08);
   border: 1px solid rgba(249,115,22,0.28);
   border-radius: 10px;
   overflow: hidden;
@@ -630,14 +630,14 @@ body {
    HERO GRADIENT TEXT
    ============================================ */
 .gradient-text {
-  background: linear-gradient(135deg, #F59E0B 0%, #F97316 50%, #EF4444 100%);
+  background: linear-gradient(135deg, #0E9F6E 0%, #0E9F6E 50%, #EF4444 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-text-yellow {
-  background: linear-gradient(135deg, #FBBF24, #F97316);
+  background: linear-gradient(135deg, #FBBF24, #0E9F6E);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -647,7 +647,7 @@ body {
    ANIMATED GRADIENT BG
    ============================================ */
 .animated-gradient {
-  background: linear-gradient(-45deg, #FBBF24, #F97316, #EF4444, #8B5CF6);
+  background: linear-gradient(-45deg, #FBBF24, #0E9F6E, #EF4444, #8B5CF6);
   background-size: 400% 400%;
   animation: gradient-shift 8s ease infinite;
 }
@@ -723,11 +723,11 @@ body {
   pointer-events: none;
 }
 .orb-yellow { background: rgba(245,158,11,0.14); }
-.orb-orange { background: rgba(249,115,22,0.1); }
+.orb-orange { background: rgba(14,159,110,0.1); }
 .orb-purple { background: rgba(139,92,246,0.07); }
 
 .dark .orb-yellow { background: rgba(251,191,36,0.12); }
-.dark .orb-orange { background: rgba(249,115,22,0.08); }
+.dark .orb-orange { background: rgba(14,159,110,0.08); }
 .dark .orb-purple { background: rgba(139,92,246,0.06); }
 
 /* ============================================

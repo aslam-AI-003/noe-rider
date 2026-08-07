@@ -39,7 +39,7 @@ export default function Card({
         'rounded-2xl',
         variants[variant],
         paddings[padding],
-        hover && 'transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-orange-400/25 cursor-pointer',
+        hover && 'transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[#0E9F6E]/25 cursor-pointer',
         className
       )}
       onClick={onClick}

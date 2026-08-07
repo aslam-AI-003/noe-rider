@@ -68,7 +68,7 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      isActive ? 'bg-orange-500/10 border border-orange-500/20' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                      isActive ? 'bg-[#0E9F6E]/10 border border-[#0E9F6E]/20' : 'hover:bg-black/5 dark:hover:bg-white/5'
                     }`}>
                     <item.icon size={18} className={isActive ? 'text-accent' : 'text-muted'} />
                     <span className={`text-sm font-medium ${isActive ? 'text-accent' : 'text-body'}`}>{item.label}</span>
@@ -98,7 +98,7 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
                       {item.label}
                     </span>
                     {isActive && (
-                      <span className="absolute -bottom-1 w-5 h-0.5 rounded-full bg-orange-500" />
+                      <span className="absolute -bottom-1 w-5 h-0.5 rounded-full bg-[#0E9F6E]" />
                     )}
                   </Link>
                 );

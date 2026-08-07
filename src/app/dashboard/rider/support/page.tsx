@@ -200,7 +200,7 @@ export default function RiderSupportPage() {
                 style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
               />
               <button onClick={sendMessage}
-                className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500">
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#0E9F6E]">
                 <Send size={14} className="text-body" />
               </button>
             </div>

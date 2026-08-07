@@ -88,7 +88,7 @@ export default function RiderSchedulePage() {
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center"
               style={{ background: isOnBreak ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.12)' }}>
-              {isOnBreak ? <Coffee size={22} className="text-amber-400" /> : <Play size={22} className="text-emerald-400" />}
+              {isOnBreak ? <Coffee size={22} className="text-[#0E9F6E]" /> : <Play size={22} className="text-emerald-400" />}
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-body">{isOnBreak ? 'On Break' : 'Currently Active'}</p>

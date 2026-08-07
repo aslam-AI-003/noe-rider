@@ -106,7 +106,7 @@ export default function AreaSelector() {
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
-                    area.type === 'city' ? 'bg-orange-500/10' :
+                    area.type === 'city' ? 'bg-[#0E9F6E]/10' :
                     area.type === 'town' ? 'bg-blue-500/10' : 'bg-emerald-500/10'
                   }`}>
                     {area.type === 'city' ? '🏙️' : area.type === 'town' ? '🏘️' : '🌾'}

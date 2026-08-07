@@ -16,7 +16,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[#0E9F6E] to-[#087f58] rounded-xl flex items-center justify-center shadow-md">
               <Bike size={20} className="text-white" />
             </div>
             <div className="hidden sm:block">
@@ -52,7 +52,7 @@ export default function Header() {
             <Link href="/cart" className="relative p-2 rounded-xl hover:bg-[var(--card-hover)] transition-colors">
               <ShoppingCart size={22} className="text-secondary" />
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#0E9F6E] text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {cart.length}
                 </span>
               )}
@@ -60,7 +60,7 @@ export default function Header() {
 
             {/* Auth Button */}
             {isAuthenticated ? (
-              <Link href="/profile" className="w-9 h-9 bg-orange-500/15 rounded-xl flex items-center justify-center">
+              <Link href="/profile" className="w-9 h-9 bg-[#0E9F6E]/15 rounded-xl flex items-center justify-center">
                 <UserRound size={18} className="text-accent" />
               </Link>
             ) : (

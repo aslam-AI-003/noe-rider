@@ -18,7 +18,7 @@ export default function Badge({
 }: BadgeProps) {
   const variants = {
     success: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-    warning: 'bg-orange-500/15 text-accent',
+    warning: 'bg-[#0E9F6E]/15 text-accent',
     danger: 'bg-red-500/15 text-red-600 dark:text-red-400',
     info: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
     default: 'surface text-secondary',

@@ -24,9 +24,9 @@ export default function Button({
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'bg-gradient-to-br from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white hover:shadow-lg hover:shadow-orange-500/30',
+    primary: 'bg-gradient-to-br from-[#0E9F6E] to-[#087f58] hover:from-amber-300 hover:to-orange-400 text-white hover:shadow-lg hover:shadow-orange-500/30',
     secondary: 'surface surface-hover text-secondary',
-    outline: 'border-2 border-orange-500 text-accent hover:bg-orange-500 hover:text-white',
+    outline: 'border-2 border-[#0E9F6E] text-accent hover:bg-[#0E9F6E] hover:text-white',
     ghost: 'text-muted hover:text-body hover:bg-[var(--card-hover)]',
     danger: 'bg-red-500 hover:bg-red-600 text-white',
   };

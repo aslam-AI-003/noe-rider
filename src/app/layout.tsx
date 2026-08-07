@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeScript } from '@/components/ThemeScript';
 
 export const metadata: Metadata = {
-  title: 'NammaOoru Express — Fast Local Delivery',
+  title: 'NOX Rider — Delivery Partner — Fast Local Delivery',
   description: 'Order groceries, food, medicine & more from local shops in Thanjavur & Kumbakonam. Delivered in 30 minutes.',
   keywords: 'delivery, groceries, food, medicine, Thanjavur, Kumbakonam, Tamil Nadu',
   manifest: '/manifest.json',
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               boxShadow: '0 16px 40px rgba(17,24,39,0.12)',
             },
             success: {
-              iconTheme: { primary: '#F97316', secondary: '#fff' },
+              iconTheme: { primary: '#0E9F6E', secondary: '#fff' },
             },
             error: {
               iconTheme: { primary: '#EF4444', secondary: '#fff' },

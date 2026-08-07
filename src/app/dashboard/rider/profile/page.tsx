@@ -168,11 +168,11 @@ export default function RiderProfilePage() {
                 <div key={item.label} className="flex items-center gap-3 p-3.5 rounded-xl border"
                   style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    item.status === 'verified' ? 'bg-emerald-500/15' : item.status === 'not_required' ? 'bg-gray-500/15' : 'bg-amber-500/15'
+                    item.status === 'verified' ? 'bg-emerald-500/15' : item.status === 'not_required' ? 'bg-gray-500/15' : 'bg-[#0E9F6E]/15'
                   }`}>
                     {item.status === 'verified' ? <CheckCircle2 size={16} className="text-emerald-400" /> :
                      item.status === 'not_required' ? <Clock size={16} className="text-muted" /> :
-                     <AlertCircle size={16} className="text-amber-400" />}
+                     <AlertCircle size={16} className="text-[#0E9F6E]" />}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-body">{item.label}</p>
@@ -181,7 +181,7 @@ export default function RiderProfilePage() {
                   <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
                     item.status === 'verified' ? 'bg-emerald-500/15 text-emerald-400' :
                     item.status === 'not_required' ? 'bg-gray-500/15 text-muted' :
-                    'bg-amber-500/15 text-amber-400'
+                    'bg-[#0E9F6E]/15 text-[#0E9F6E]'
                   }`}>
                     {item.status === 'verified' ? '✓ Verified' : item.status === 'not_required' ? 'N/A' : '⏳ Pending'}
                   </span>

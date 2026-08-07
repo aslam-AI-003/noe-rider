@@ -100,7 +100,7 @@ export default function RiderEarningsPage() {
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === tab ? 'bg-orange-500 text-white shadow-lg' : 'text-muted hover:text-body'
+                activeTab === tab ? 'bg-[#0E9F6E] text-white shadow-lg' : 'text-muted hover:text-body'
               }`}>
               {tab}
             </button>
@@ -208,7 +208,7 @@ export default function RiderEarningsPage() {
         </div>
 
         {/* Withdraw */}
-        <button className="w-full py-4 rounded-2xl text-sm font-black bg-orange-500 text-white flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <button className="w-full py-4 rounded-2xl text-sm font-black bg-[#0E9F6E] text-white flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
           <Wallet size={16} /> Withdraw to Bank
         </button>
       </div>

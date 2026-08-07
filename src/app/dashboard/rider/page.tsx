@@ -25,7 +25,7 @@ const STATUS_FLOW: Record<string, { next: DemoOrder['status']; label: string; co
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  ready:      { label: '📦 Ready for Pickup', color: 'text-orange-600 dark:text-orange-400' },
+  ready:      { label: '📦 Ready for Pickup', color: 'text-orange-600 dark:text-[#0E9F6E]' },
   picked_up:  { label: '🏃 Picked Up', color: 'text-purple-600 dark:text-purple-400' },
   on_the_way: { label: '🛵 On the Way', color: 'text-blue-600 dark:text-blue-400' },
   delivered:  { label: '✅ Delivered', color: 'text-emerald-600 dark:text-emerald-400' },
@@ -270,11 +270,11 @@ export default function RiderDashboard() {
         {availableOrders.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-sm font-bold text-body flex items-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+              <div className="w-2 h-2 bg-[#0E9F6E] rounded-full animate-pulse" />
               New Delivery Requests ({availableOrders.length})
             </h2>
             {availableOrders.map((order: any) => (
-              <div key={order.id} className="glass-card p-4 border-l-4 border-orange-500 space-y-3">
+              <div key={order.id} className="glass-card p-4 border-l-4 border-[#0E9F6E] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-black text-body">{order.orderId || `#${order.id.slice(0,8)}`}</p>
@@ -366,7 +366,7 @@ export default function RiderDashboard() {
               <div className="space-y-2">
                 {/* Pickup */}
                 <div className="p-3 surface rounded-xl flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-[#0E9F6E]/10 rounded-lg flex items-center justify-center">
                     <Store size={14} className="text-orange-600" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -427,9 +427,9 @@ export default function RiderDashboard() {
 
               {/* Collect COD warning */}
               {activeOrder.paymentMethod === 'cod' && activeOrder.status === 'on_the_way' && (
-                <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                <div className="p-2.5 bg-[#0E9F6E]/10 border border-[#0E9F6E]/20 rounded-lg flex items-center gap-2">
                   <Wallet size={14} className="text-amber-600" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400 font-bold">Collect ₹{activeOrder.total} cash on delivery</p>
+                  <p className="text-xs text-amber-700 dark:text-[#0E9F6E] font-bold">Collect ₹{activeOrder.total} cash on delivery</p>
                 </div>
               )}
 
@@ -533,7 +533,7 @@ export default function RiderDashboard() {
             <p className="text-xs text-muted">Ask customer for the 4-digit OTP sent to their phone</p>
 
             {/* OTP hint for demo */}
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+            <div className="p-3 bg-[#0E9F6E]/10 border border-[#0E9F6E]/20 rounded-xl">
               <p className="text-[10px] text-faint">Demo OTP (shown in toast):</p>
               <p className="text-2xl font-black text-amber-600 tracking-widest">{currentOTP}</p>
             </div>

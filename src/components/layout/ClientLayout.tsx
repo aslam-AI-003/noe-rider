@@ -147,7 +147,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Push Notification Permission Banner */}
       {showNotifBanner && (
         <div className="fixed bottom-20 left-4 right-4 z-[100] md:left-auto md:right-4 md:bottom-4 md:w-96 animate-slide-up">
-          <div className="glass-card p-4 border-orange-400/30 shadow-xl">
+          <div className="glass-card p-4 border-[#0E9F6E]/30 shadow-xl">
             <div className="flex items-start gap-3">
               <span className="text-2xl">🔔</span>
               <div className="flex-1">
@@ -164,7 +164,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               </button>
               <button
                 onClick={handleEnableNotifs}
-                className="flex-1 py-2 text-xs font-bold text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors"
+                className="flex-1 py-2 text-xs font-bold text-white bg-[#0E9F6E] rounded-xl hover:bg-orange-600 transition-colors"
               >
                 🔔 Enable
               </button>
