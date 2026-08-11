@@ -37,6 +37,49 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   delivered:  { label: '✅ Delivered', color: 'text-emerald-600 dark:text-emerald-400' },
 };
 
+// Calculate distance between two coordinates (Haversine formula) — returns km
+function calcDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Pricing: ₹40 base (within 4km from shop to customer) + ₹8/km above 4km
+function calcDeliveryEarning(order: any): number {
+  const shopLat = order.shopLat || order.pickupLat;
+  const shopLng = order.shopLng || order.pickupLng;
+  const custLat = order.customerLat || order.deliveryLat;
+  const custLng = order.customerLng || order.deliveryLng;
+  
+  let distKm = 3; // default if coordinates not available
+  if (shopLat && shopLng && custLat && custLng) {
+    distKm = calcDistanceKm(shopLat, shopLng, custLat, custLng);
+  } else if (order.distanceKm) {
+    distKm = order.distanceKm;
+  }
+
+  if (distKm <= 4) return 40;
+  return 40 + Math.ceil(distKm - 4) * 8;
+}
+
+// Get distance text for display
+function getDistanceText(order: any): string {
+  const shopLat = order.shopLat || order.pickupLat;
+  const shopLng = order.shopLng || order.pickupLng;
+  const custLat = order.customerLat || order.deliveryLat;
+  const custLng = order.customerLng || order.deliveryLng;
+  
+  if (shopLat && shopLng && custLat && custLng) {
+    const km = calcDistanceKm(shopLat, shopLng, custLat, custLng);
+    return `${km.toFixed(1)} km`;
+  }
+  return order.distanceKm ? `${order.distanceKm} km` : '~3 km';
+}
+
 // Generate 4-digit OTP for delivery
 function generateOTP() {
   return Math.floor(1000 + Math.random() * 9000).toString();
@@ -141,11 +184,13 @@ export default function RiderDashboard() {
 
   if (!mounted) return <div className="min-h-screen app-bg" />;
 
+  // Real earnings based on distance pricing
+  const todayTotal = deliveredOrders.reduce((s, o) => s + calcDeliveryEarning(o), 0);
   const earnings = {
-    today: deliveredOrders.length * 40,
+    today: todayTotal,
     deliveries: deliveredOrders.length,
     trips: riderOrders.length + deliveredOrders.length,
-    avgTime: '18 min',
+    perOrder: deliveredOrders.length > 0 ? Math.round(todayTotal / deliveredOrders.length) : 40,
   };
 
   const handleStatusChange = (orderId: string, newStatus: DemoOrder['status']) => {
@@ -262,12 +307,12 @@ export default function RiderDashboard() {
               <p className="text-[9px] text-faint">Trips</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-black text-body">₹40</p>
+              <p className="text-lg font-black text-body">₹{earnings.perOrder}</p>
               <p className="text-[9px] text-faint">Per Order</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-black text-body">{earnings.avgTime}</p>
-              <p className="text-[9px] text-faint">Avg Time</p>
+              <p className="text-lg font-black text-body">{riderGPS ? '📍' : '⚠️'}</p>
+              <p className="text-[9px] text-faint">GPS</p>
             </div>
           </div>
         </div>
@@ -286,13 +331,21 @@ export default function RiderDashboard() {
                     <p className="text-sm font-black text-body">{order.orderId || `#${order.id.slice(0,8)}`}</p>
                     <p className="text-xs text-muted">{order.shopName}</p>
                   </div>
-                  <p className="text-lg font-black text-accent">₹{order.totalAmount || order.total}</p>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-accent">₹{order.totalAmount || order.total}</p>
+                    <p className="text-[9px] text-faint">{getDistanceText(order)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-faint">
                   <MapPin size={10} /> {order.deliveryAddress || 'Nearby'}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <Package size={12} /> {order.items?.length || 0} items • {(order.paymentMethod || 'cod').toUpperCase()}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                    <Package size={12} /> {order.items?.length || 0} items • {(order.paymentMethod || 'cod').toUpperCase()}
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    You earn: ₹{calcDeliveryEarning(order)}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -501,10 +554,10 @@ export default function RiderDashboard() {
                 <div key={order.id} className="glass-sm p-3 flex items-center justify-between opacity-70">
                   <div>
                     <p className="text-xs font-bold text-body">#{order.id}</p>
-                    <p className="text-[10px] text-faint">{order.shopName} → {order.customerName}</p>
+                    <p className="text-[10px] text-faint">{order.shopName} → {order.customerName} • {getDistanceText(order)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+₹40</p>
+                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+₹{calcDeliveryEarning(order)}</p>
                     <p className="text-[10px] text-faint">{timeAgo(order.updatedAt)}</p>
                   </div>
                 </div>
@@ -513,17 +566,9 @@ export default function RiderDashboard() {
           </div>
         )}
 
-        {/* Quick links */}
-        <div className="glass-sm p-4 text-center space-y-2">
-          <p className="text-[10px] text-faint uppercase font-bold">Quick Actions</p>
-          <div className="flex justify-center gap-3">
-            <Link href="/dashboard/shop" className="text-xs text-accent font-bold hover:opacity-80">
-              Shop Dashboard →
-            </Link>
-            <Link href="/orders" className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:opacity-80">
-              Customer View →
-            </Link>
-          </div>
+        {/* Pricing Info */}
+        <div className="glass-sm p-3 text-center">
+          <p className="text-[10px] text-faint">💰 Pricing: ₹40 (up to 4km) + ₹8/km extra • Distance = Shop → Customer</p>
         </div>
       </div>
 
