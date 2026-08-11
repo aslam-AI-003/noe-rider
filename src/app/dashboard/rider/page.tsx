@@ -142,7 +142,7 @@ export default function RiderDashboard() {
   if (!mounted) return <div className="min-h-screen app-bg" />;
 
   const earnings = {
-    today: deliveredOrders.length * 45,
+    today: deliveredOrders.length * 40,
     deliveries: deliveredOrders.length,
     trips: riderOrders.length + deliveredOrders.length,
     avgTime: '18 min',
@@ -187,7 +187,7 @@ export default function RiderDashboard() {
         updateDemoOrderStatus(deliveryOrderId, 'delivered');
         // Sync to Firestore
         orderService.updateStatus(deliveryOrderId, 'delivered', { deliveredAt: new Date().toISOString() }).catch(() => {});
-        toast.success('Delivery completed! ₹45 earned 💰');
+        toast.success('Delivery completed! ₹40 earned 💰');
       }
       setShowOTPModal(false);
       setDeliveryOrderId(null);
@@ -262,7 +262,7 @@ export default function RiderDashboard() {
               <p className="text-[9px] text-faint">Trips</p>
             </div>
             <div className="text-center">
-              <p className="text-lg font-black text-body">₹45</p>
+              <p className="text-lg font-black text-body">₹40</p>
               <p className="text-[9px] text-faint">Per Order</p>
             </div>
             <div className="text-center">
@@ -504,7 +504,7 @@ export default function RiderDashboard() {
                     <p className="text-[10px] text-faint">{order.shopName} → {order.customerName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+₹45</p>
+                    <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+₹40</p>
                     <p className="text-[10px] text-faint">{timeAgo(order.updatedAt)}</p>
                   </div>
                 </div>

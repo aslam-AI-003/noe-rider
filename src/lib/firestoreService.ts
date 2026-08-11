@@ -172,6 +172,24 @@ export const riderService = {
     }
   },
 
+  async findByPhone(phone: string): Promise<RiderRegistration | null> {
+    const firestore = getDb();
+    if (!firestore) return null;
+    try {
+      const q = query(
+        collection(firestore, 'riders'),
+        where('phone', '==', phone)
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) return null;
+      const doc0 = snapshot.docs[0];
+      return { id: doc0.id, ...doc0.data() } as RiderRegistration;
+    } catch (err) {
+      console.error('[findByPhone] Firestore error:', err);
+      return null;
+    }
+  },
+
   onAll(callback: (riders: RiderRegistration[]) => void) {
     const firestore = getDb();
     if (!firestore) return () => {};
