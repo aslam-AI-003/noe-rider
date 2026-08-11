@@ -10,6 +10,8 @@ import {
   acceptDelivery, markPickedUp, markInTransit, markDelivered,
   updateRiderLocation,
 } from '@/lib/noxOrderService';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type { NoxOrder } from '@/types/noxOrder';
 import toast from 'react-hot-toast';
 import {
@@ -171,6 +173,37 @@ export default function RiderDashboard() {
     };
   }, [riderId]);
 
+  // ━━━ Upload GPS to Firestore when online (every 30s) ━━━
+  useEffect(() => {
+    if (!isOnline || !riderGPS || !db) return;
+
+    // Upload immediately
+    const uploadGPS = () => {
+      if (!riderGPS || !db) return;
+      setDoc(doc(db, 'riderLocations', riderId), {
+        lat: riderGPS.lat,
+        lng: riderGPS.lng,
+        riderId,
+        riderName: user?.displayName || 'Rider',
+        updatedAt: new Date().toISOString(),
+        isOnline: true,
+      }, { merge: true }).catch(() => {});
+    };
+
+    uploadGPS();
+    const interval = setInterval(uploadGPS, 30000); // Every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isOnline, riderGPS, riderId, user?.displayName]);
+
+  // Mark offline in Firestore when going offline
+  useEffect(() => {
+    if (!db || !riderId) return;
+    if (!isOnline) {
+      setDoc(doc(db, 'riderLocations', riderId), { isOnline: false, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+    }
+  }, [isOnline, riderId]);
+
   useEffect(() => {
     if (readyCount > prevCountRef.current && readyCount > 0) {
       playNewDeliverySound();
@@ -281,9 +314,6 @@ export default function RiderDashboard() {
               }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
               {isOnline ? 'Online' : 'Offline'}
-            </button>
-            <button onClick={() => { logout(); toast('Logged out'); }} className="btn-icon">
-              <LogOut size={14} />
             </button>
           </div>
         </div>
