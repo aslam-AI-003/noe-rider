@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import {
   Trophy, Zap, Target, Flame, Gift, Star, Crown, Medal,
   CloudRain, Sun, Moon, PartyPopper, Timer, TrendingUp,
 } from 'lucide-react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // RIDER INCENTIVES — Quests, Badges, Achievements
@@ -40,17 +42,33 @@ interface Badge {
 export default function RiderIncentivesPage() {
   const { demoOrders, user } = useStore();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Daily');
+  const [peakHourActive, setPeakHourActive] = useState(false);
+  const [rainWarriorActive, setRainWarriorActive] = useState(false);
+
+  // Listen to admin settings in Firestore (real-time)
+  useEffect(() => {
+    if (!db) return;
+    try {
+      const unsub = onSnapshot(doc(db!, 'settings', 'incentives'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setPeakHourActive(data?.peakHourHero === true);
+          setRainWarriorActive(data?.rainWarrior === true);
+        }
+      });
+      return () => unsub();
+    } catch {}
+  }, []);
 
   const riderId = user?.uid || 'rider-001';
   const deliveredToday = demoOrders.filter(o => o.status === 'delivered' && o.riderId === riderId).length;
 
-  // Daily Quests
+  // Daily Quests (admin-controlled Peak Hour & Rain Warrior)
   const dailyQuests: Quest[] = [
-    { id: 'dq1', title: 'Complete 5 Orders', description: 'Deliver 5 orders today', target: 5, current: Math.min(deliveredToday, 5), reward: 100, icon: Target, color: 'var(--orange)', type: 'orders' },
-    { id: 'dq2', title: 'Complete 10 Orders', description: 'Deliver 10 orders for bonus', target: 10, current: Math.min(deliveredToday, 10), reward: 250, icon: Flame, color: '#ef4444', type: 'orders' },
-    { id: 'dq3', title: 'Peak Hour Hero', description: 'Complete 3 orders between 12-2 PM', target: 3, current: Math.min(deliveredToday, 2), reward: 75, icon: Sun, color: '#f59e0b', type: 'special', expiresIn: '2h left' },
-    { id: 'dq4', title: 'Night Owl', description: 'Complete 3 orders after 8 PM', target: 3, current: 0, reward: 100, icon: Moon, color: '#8b5cf6', type: 'special', expiresIn: '6h left' },
-    { id: 'dq5', title: 'Rain Warrior', description: 'Complete any delivery in rain', target: 1, current: 0, reward: 50, icon: CloudRain, color: '#06b6d4', type: 'special' },
+    { id: 'dq1', title: 'Complete 5 Orders', description: 'Deliver first 5 orders today — earn ₹50 bonus', target: 5, current: Math.min(deliveredToday, 5), reward: 50, icon: Target, color: 'var(--orange)', type: 'orders' },
+    { id: 'dq2', title: 'Complete 50 Orders', description: 'Deliver 50 orders total — earn ₹250 bonus', target: 50, current: Math.min(deliveredToday, 50), reward: 250, icon: Flame, color: '#ef4444', type: 'orders' },
+    ...(peakHourActive ? [{ id: 'dq3', title: 'Peak Hour Hero 🔥', description: 'Every order during rush hour gets ₹10 extra!', target: 99, current: deliveredToday, reward: 10, icon: Sun, color: '#f59e0b', type: 'special' as const, expiresIn: 'Active Now' }] : []),
+    ...(rainWarriorActive ? [{ id: 'dq5', title: 'Rain Warrior 🌧️', description: 'Every delivery during rain gets ₹10 extra!', target: 99, current: deliveredToday, reward: 10, icon: CloudRain, color: '#06b6d4', type: 'special' as const, expiresIn: 'Active Now' }] : []),
   ];
 
   // Weekly Quests
