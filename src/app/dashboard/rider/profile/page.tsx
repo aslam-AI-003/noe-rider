@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
+import { riderService } from '@/lib/firestoreService';
 import {
   User, Phone, Bike, CreditCard, Shield, FileText, Camera,
   ChevronRight, LogOut, Bell, Moon, Sun, Globe, HelpCircle, Star,
   CheckCircle2, AlertCircle, Upload, X, Image as ImageIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { t } from '@/lib/i18n';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // RIDER PROFILE — Production-ready
@@ -49,6 +51,20 @@ export default function RiderProfilePage() {
 
   const rider = riderRegistrations.find(r => r.status === 'approved' && (r.riderId === user?.uid || r.phone === user?.phone));
 
+  // Load saved theme & uploads from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('nox-rider-theme') as 'dark' | 'light' || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.add(savedTheme);
+
+    const savedUploads = localStorage.getItem('nox-rider-uploads');
+    if (savedUploads) { try { setUploads(JSON.parse(savedUploads)); } catch {} }
+
+    const savedBank = localStorage.getItem('nox-rider-bank');
+    if (savedBank) { try { setBankDetails(JSON.parse(savedBank)); } catch {} }
+  }, []);
+
   const handleLogout = () => {
     logout();
     toast.success('Logged out');
@@ -66,9 +82,15 @@ export default function RiderProfilePage() {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = reader.result as string;
-      setUploads(prev => ({ ...prev, [activeUpload]: base64 }));
+      const newUploads = { ...uploads, [activeUpload]: base64 };
+      setUploads(newUploads);
+      localStorage.setItem('nox-rider-uploads', JSON.stringify(newUploads));
+      // Sync to Firestore so admin can view
+      if (rider?.id) {
+        try { await riderService.update(rider.id, { documents: newUploads } as any); } catch {}
+      }
       toast.success(`${getDocLabel(activeUpload)} uploaded! ✅`);
       setActiveUpload(null);
     };
@@ -101,11 +123,13 @@ export default function RiderProfilePage() {
   const allDocsUploaded = uploadedCount === mandatoryDocs.length;
   const completionPercent = Math.round((uploadedCount / mandatoryDocs.length) * 100);
 
-  // Theme toggle
+  // Theme toggle — applies dark/light class on <html> so CSS vars change globally
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.add(newTheme);
+    localStorage.setItem('nox-rider-theme', newTheme);
     toast.success(`Theme: ${newTheme === 'dark' ? '🌙 Dark' : '☀️ Light'}`);
   };
 
@@ -124,10 +148,15 @@ export default function RiderProfilePage() {
   };
 
   // Save bank details
-  const saveBankDetails = () => {
+  const saveBankDetails = async () => {
     if (!bankDetails.accountNumber || !bankDetails.ifscCode || !bankDetails.bankName || !bankDetails.accountHolder) {
       toast.error('Fill all mandatory bank fields');
       return;
+    }
+    localStorage.setItem('nox-rider-bank', JSON.stringify(bankDetails));
+    // Sync to Firestore
+    if (rider?.id) {
+      try { await riderService.update(rider.id, { bankDetails } as any); } catch {}
     }
     toast.success('Bank details saved! ✅');
     setShowBank(false);
@@ -142,7 +171,7 @@ export default function RiderProfilePage() {
       <header className="sticky top-0 z-30 header-glass">
         <div className="max-w-lg mx-auto px-4 py-4">
           <h1 className="text-lg font-black text-body flex items-center gap-2">
-            <User size={20} className="text-accent" /> Profile
+            <User size={20} className="text-accent" /> {t('riderProfile', language)}
           </h1>
         </div>
       </header>
@@ -223,7 +252,7 @@ export default function RiderProfilePage() {
 
         {/* ━━━ ACCOUNT ━━━ */}
         <div>
-          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">Account</h3>
+          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">{t('account', language)}</h3>
           <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
             {/* KYC Documents */}
             <button onClick={() => setShowKYC(true)} className="w-full flex items-center gap-3 p-4 text-left transition-all hover:bg-white/[0.03]">
@@ -231,7 +260,7 @@ export default function RiderProfilePage() {
                 <Shield size={16} className="text-orange-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">KYC Documents</p>
+                <p className="text-sm font-semibold text-body">{t('kycDocuments', language)}</p>
                 <p className="text-[10px] text-faint">Aadhaar, License, RC Book • {uploadedCount}/{mandatoryDocs.length} uploaded</p>
               </div>
               {allDocsUploaded ? <CheckCircle2 size={14} className="text-emerald-400" /> : <AlertCircle size={14} className="text-amber-400" />}
@@ -244,7 +273,7 @@ export default function RiderProfilePage() {
                 <CreditCard size={16} className="text-emerald-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Bank & UPI</p>
+                <p className="text-sm font-semibold text-body">{t('bankDetails', language)}</p>
                 <p className="text-[10px] text-faint">{bankDetails.bankName ? `${bankDetails.bankName} ****${bankDetails.accountNumber.slice(-4)}` : 'Add bank details'}</p>
               </div>
               {bankDetails.accountNumber ? <CheckCircle2 size={14} className="text-emerald-400" /> : <AlertCircle size={14} className="text-amber-400" />}
@@ -257,7 +286,7 @@ export default function RiderProfilePage() {
                 <Bike size={16} className="text-purple-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Vehicle Details</p>
+                <p className="text-sm font-semibold text-body">{t('vehicleDetails', language)}</p>
                 <p className="text-[10px] text-faint">{rider?.vehicleType || 'Bike'} • {(rider as any)?.vehicleNumber || 'No plate'}</p>
               </div>
               <ChevronRight size={14} className="text-faint" />
@@ -267,7 +296,7 @@ export default function RiderProfilePage() {
 
         {/* ━━━ PREFERENCES ━━━ */}
         <div>
-          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">Preferences</h3>
+          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">{t('preferences', language)}</h3>
           <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
             {/* Language */}
             <button onClick={() => setShowLanguage(true)} className="w-full flex items-center gap-3 p-4 text-left transition-all hover:bg-white/[0.03]">
@@ -275,7 +304,7 @@ export default function RiderProfilePage() {
                 <Globe size={16} className="text-blue-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Language</p>
+                <p className="text-sm font-semibold text-body">{t('language', language)}</p>
                 <p className="text-[10px] text-faint">{language === 'ta' ? 'தமிழ்' : 'English'}</p>
               </div>
               <ChevronRight size={14} className="text-faint" />
@@ -287,7 +316,7 @@ export default function RiderProfilePage() {
                 {theme === 'dark' ? <Moon size={16} className="text-indigo-400" /> : <Sun size={16} className="text-amber-400" />}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Theme</p>
+                <p className="text-sm font-semibold text-body">{t('theme', language)}</p>
                 <p className="text-[10px] text-faint">{theme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}</p>
               </div>
               <div className={`w-10 h-5 rounded-full flex items-center p-0.5 transition-all ${theme === 'dark' ? 'bg-emerald-500 justify-end' : 'bg-gray-600 justify-start'}`}>
@@ -301,8 +330,8 @@ export default function RiderProfilePage() {
                 <Bell size={16} className="text-amber-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Notifications</p>
-                <p className="text-[10px] text-faint">Tap to enable push notifications</p>
+                <p className="text-sm font-semibold text-body">{t('notifications', language)}</p>
+                <p className="text-[10px] text-faint">{t('tapToEnable', language)}</p>
               </div>
               <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400">Enabled</span>
             </button>
@@ -311,15 +340,15 @@ export default function RiderProfilePage() {
 
         {/* ━━━ SUPPORT ━━━ */}
         <div>
-          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">Support</h3>
+          <h3 className="text-[11px] font-bold text-faint uppercase tracking-wider mb-2 px-1">{t('supportSection', language)}</h3>
           <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
             <button className="w-full flex items-center gap-3 p-4 text-left transition-all hover:bg-white/[0.03]">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/10">
                 <HelpCircle size={16} className="text-emerald-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Help & FAQ</p>
-                <p className="text-[10px] text-faint">24/7 support available</p>
+                <p className="text-sm font-semibold text-body">{t('helpFaq', language)}</p>
+                <p className="text-[10px] text-faint">{t('supportAvailable', language)}</p>
               </div>
               <ChevronRight size={14} className="text-faint" />
             </button>
@@ -328,8 +357,8 @@ export default function RiderProfilePage() {
                 <FileText size={16} className="text-gray-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Terms & Policies</p>
-                <p className="text-[10px] text-faint">Privacy, Terms of Service</p>
+                <p className="text-sm font-semibold text-body">{t('termsPolices', language)}</p>
+                <p className="text-[10px] text-faint">{t('privacyTerms', language)}</p>
               </div>
               <ChevronRight size={14} className="text-faint" />
             </button>
@@ -338,8 +367,8 @@ export default function RiderProfilePage() {
                 <Star size={16} className="text-amber-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-body">Rate the App</p>
-                <p className="text-[10px] text-faint">Help us improve</p>
+                <p className="text-sm font-semibold text-body">{t('rateApp', language)}</p>
+                <p className="text-[10px] text-faint">{t('helpImprove', language)}</p>
               </div>
               <ChevronRight size={14} className="text-faint" />
             </button>
@@ -350,7 +379,7 @@ export default function RiderProfilePage() {
         <button onClick={handleLogout}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border text-sm font-bold transition-all"
           style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}>
-          <LogOut size={16} /> Logout
+          <LogOut size={16} /> {t('logout', language)}
         </button>
 
         <p className="text-center text-[10px] text-faint pb-4">Namma Ooru Express v2.0 • Rider App</p>
