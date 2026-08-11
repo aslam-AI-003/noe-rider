@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useStore, DemoOrder } from '@/store/useStore';
-import { orderService } from '@/lib/firestoreService';
 import {
   listenAvailableOrders, listenMyDelivery,
   acceptDelivery, markPickedUp, markInTransit, markDelivered,
@@ -151,15 +150,66 @@ export default function RiderDashboard() {
       );
     }
 
-    // Subscribe to real-time Firestore: my assigned orders + available orders
+    // Subscribe to real-time Firestore: my assigned orders + available orders (NOX Service)
     if (riderId) {
-      const unsubMy = orderService.onRiderOrders(riderId, (firestoreOrders) => {
-        setMyOrders(firestoreOrders);
+      const unsubMy = listenMyDelivery(riderId, (noxOrders) => {
+        // Convert NoxOrder to local format
+        const mapped = noxOrders.map((o: any) => ({
+          id: o.orderId,
+          orderId: o.orderId,
+          shopName: o.shopName,
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          items: o.items || [],
+          total: o.total,
+          totalAmount: o.total,
+          status: o.status === 'rider_assigned' ? 'ready' : o.status,
+          paymentMethod: o.paymentMethod || 'cod',
+          createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date().toISOString(),
+          updatedAt: typeof o.updatedAt === 'string' ? o.updatedAt : new Date().toISOString(),
+          deliveryOtp: o.deliveryOTP,
+          deliveryAddress: o.deliveryAddress,
+          shopLat: o.shopLocation?.lat,
+          shopLng: o.shopLocation?.lng,
+          customerLat: o.customerLocation?.lat,
+          customerLng: o.customerLocation?.lng,
+          address: { 
+            label: 'Delivery', 
+            fullAddress: o.deliveryAddress || 'Thanjavur',
+            lat: o.customerLocation?.lat,
+            lng: o.customerLocation?.lng,
+          },
+        }));
+        setMyOrders(mapped);
       });
-      const unsubAvailable = orderService.onAvailableOrders((orders) => {
-        // Filter out orders this rider already rejected
-        const filtered = orders.filter((o: any) => !o[`rejectedBy_${riderId}`]);
-        setAvailableOrders(filtered);
+      const unsubAvailable = listenAvailableOrders('Thanjavur', (noxOrders) => {
+        // Convert NoxOrder to local format for display
+        const mapped = noxOrders.map((o: any) => ({
+          id: o.orderId,
+          orderId: o.orderId,
+          shopName: o.shopName,
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          items: o.items || [],
+          total: o.total,
+          totalAmount: o.total,
+          status: o.status,
+          paymentMethod: o.paymentMethod || 'cod',
+          createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date().toISOString(),
+          deliveryOtp: o.deliveryOTP,
+          deliveryAddress: o.deliveryAddress,
+          shopLat: o.shopLocation?.lat,
+          shopLng: o.shopLocation?.lng,
+          customerLat: o.customerLocation?.lat,
+          customerLng: o.customerLocation?.lng,
+          address: {
+            label: 'Delivery',
+            fullAddress: o.deliveryAddress || 'Thanjavur',
+            lat: o.customerLocation?.lat,
+            lng: o.customerLocation?.lng,
+          },
+        }));
+        setAvailableOrders(mapped);
       });
       return () => {
         unsubMy();
@@ -226,20 +276,18 @@ export default function RiderDashboard() {
     perOrder: deliveredOrders.length > 0 ? Math.round(todayTotal / deliveredOrders.length) : 40,
   };
 
-  const handleStatusChange = (orderId: string, newStatus: DemoOrder['status']) => {
+  const handleStatusChange = async (orderId: string, newStatus: DemoOrder['status']) => {
     if (newStatus === 'delivered') {
-      // Read OTP from Firestore order doc (set by customer at checkout)
+      // Show OTP modal — rider must enter customer's OTP
       const order = myOrders.find(o => o.id === orderId) || availableOrders.find(o => o.id === orderId);
       const firestoreOtp = (order as any)?.deliveryOtp || '';
       setCurrentOTP(firestoreOtp);
       setDeliveryOrderId(orderId);
       setOtpInput('');
       setShowOTPModal(true);
-      // Hint for rider (in dev mode)
       if (firestoreOtp) {
         toast(`Ask customer for OTP`, { icon: '🔐', duration: 5000 });
       } else {
-        // Fallback: generate if no OTP in Firestore (old orders)
         const fallbackOtp = generateOTP();
         setCurrentOTP(fallbackOtp);
         toast(`Dev OTP: ${fallbackOtp}`, { icon: '🔐', duration: 10000,
@@ -249,28 +297,33 @@ export default function RiderDashboard() {
       return;
     }
 
-    updateDemoOrderStatus(orderId, newStatus);
-    // Sync to Firestore
-    orderService.updateStatus(orderId, newStatus).catch(() => {});
-    if (newStatus === 'picked_up') {
-      toast.success('Order picked up! Head to customer 🚴');
-    } else if (newStatus === 'on_the_way') {
-      toast.success('On the way! Customer notified 📱');
+    // Use NOX service for status updates
+    try {
+      let success = false;
+      if (newStatus === 'picked_up') {
+        success = await markPickedUp(orderId, riderId);
+        if (success) toast.success('Order picked up! Head to customer 🚴');
+      } else if (newStatus === 'on_the_way') {
+        success = await markInTransit(orderId, riderId);
+        if (success) toast.success('On the way! Customer notified 📱');
+      }
+      if (!success) toast.error('Failed to update status');
+    } catch (e) {
+      toast.error('Failed to update');
     }
   };
 
-  const verifyOTPAndDeliver = () => {
-    if (otpInput === currentOTP) {
-      if (deliveryOrderId) {
-        updateDemoOrderStatus(deliveryOrderId, 'delivered');
-        // Sync to Firestore
-        orderService.updateStatus(deliveryOrderId, 'delivered', { deliveredAt: new Date().toISOString() }).catch(() => {});
-        toast.success('Delivery completed! ₹40 earned 💰');
-      }
+  const verifyOTPAndDeliver = async () => {
+    if (!deliveryOrderId) return;
+    
+    // Use NOX markDelivered which validates OTP server-side
+    const result = await markDelivered(deliveryOrderId, riderId, otpInput);
+    if (result.success) {
+      toast.success('Delivery completed! ₹40 earned 💰');
       setShowOTPModal(false);
       setDeliveryOrderId(null);
     } else {
-      toast.error('Wrong OTP! Ask customer for correct OTP.');
+      toast.error(result.error || 'Wrong OTP! Ask customer for correct OTP.');
     }
   };
 
@@ -381,12 +434,17 @@ export default function RiderDashboard() {
                   <button
                     onClick={async () => {
                       try {
-                        await orderService.acceptOrder(order.id, {
+                        const success = await acceptDelivery(
+                          order.id,
                           riderId,
-                          riderName: user?.displayName || 'Rider',
-                          riderPhone: user?.phone || '9876543210',
-                        });
-                        toast.success('🎉 Order accepted! Head to pickup');
+                          user?.displayName || 'Rider',
+                          user?.phone || '9876543210'
+                        );
+                        if (success) {
+                          toast.success('🎉 Order accepted! Head to pickup');
+                        } else {
+                          toast.error('Order already taken by another rider');
+                        }
                       } catch (e) { toast.error('Failed to accept'); }
                     }}
                     className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all active:scale-95"
@@ -394,11 +452,10 @@ export default function RiderDashboard() {
                     ✅ Accept
                   </button>
                   <button
-                    onClick={async () => {
-                      try {
-                        await orderService.rejectOrder(order.id, riderId);
-                        toast('Order skipped', { icon: '⏭️' });
-                      } catch (e) { toast.error('Failed'); }
+                    onClick={() => {
+                      // Just hide from local list (rider skips)
+                      setAvailableOrders(prev => prev.filter(o => o.id !== order.id));
+                      toast('Order skipped', { icon: '⏭️' });
                     }}
                     className="px-4 py-3 bg-red-500/10 text-red-500 rounded-xl text-sm font-bold hover:bg-red-500/20 transition-all"
                   >

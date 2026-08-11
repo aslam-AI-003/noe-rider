@@ -29,45 +29,57 @@ function getDb() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// LISTEN AVAILABLE ORDERS — Ready for pickup in rider's area
+// LISTEN AVAILABLE ORDERS — Orders needing a rider (accepted/preparing/ready, no rider assigned)
+// Rider gets notified as soon as vendor accepts!
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function listenAvailableOrders(area: string, callback: (orders: NoxOrder[]) => void): () => void {
   const firestore = getDb();
-  if (!firestore) return () => {};
+  if (!firestore) { callback([]); return () => {}; }
 
+  // Listen for orders that are accepted/preparing/ready and have no rider yet
   const q = query(
     collection(firestore, 'orders'),
-    where('area', '==', area),
-    where('status', '==', 'ready'),
-    where('riderId', '==', null)
+    where('status', 'in', ['accepted', 'preparing', 'ready']),
+    where('riderId', '==', null),
+    limit(20)
   );
 
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(q, (snapshot: any) => {
     const orders = snapshot.docs.map((d: any) => d.data() as NoxOrder);
     callback(orders);
-  }, (error) => {
+  }, (error: any) => {
     console.error('Listen available orders error:', error);
-    callback([]);
+    // Fallback: try without compound query (might need index)
+    const q2 = query(
+      collection(firestore, 'orders'),
+      where('status', '==', 'ready'),
+      where('riderId', '==', null),
+      limit(20)
+    );
+    onSnapshot(q2, (snap: any) => {
+      callback(snap.docs.map((d: any) => d.data() as NoxOrder));
+    }, () => callback([]));
   });
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// LISTEN MY ACTIVE DELIVERY — Rider's current active order
+// LISTEN MY ACTIVE DELIVERY — Rider's current active orders
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function listenMyDelivery(riderId: string, callback: (orders: NoxOrder[]) => void): () => void {
   const firestore = getDb();
-  if (!firestore) return () => {};
+  if (!firestore) { callback([]); return () => {}; }
 
+  // rider_assigned = just accepted, picked_up = picked from shop, in_transit/on_the_way = heading to customer
   const q = query(
     collection(firestore, 'orders'),
     where('riderId', '==', riderId),
-    where('status', 'in', ['rider_assigned', 'picked_up', 'in_transit'])
+    where('status', 'in', ['rider_assigned', 'picked_up', 'in_transit', 'on_the_way'])
   );
 
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(q, (snapshot: any) => {
     const orders = snapshot.docs.map((d: any) => d.data() as NoxOrder);
     callback(orders);
-  }, (error) => {
+  }, (error: any) => {
     console.error('Listen my delivery error:', error);
     callback([]);
   });
