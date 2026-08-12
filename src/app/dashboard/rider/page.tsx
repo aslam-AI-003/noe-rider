@@ -589,6 +589,17 @@ export default function RiderDashboard() {
                 </div>
               )}
 
+              {/* Show Pickup OTP when order is ready (rider verifies with vendor) */}
+              {activeOrder.status === 'ready' && activeOrder.deliveryOtp && (
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-3">
+                  <Shield size={16} className="text-purple-500" />
+                  <div>
+                    <p className="text-[10px] text-muted">Pickup OTP (verify with shop)</p>
+                    <p className="text-xl font-black text-purple-600 tracking-widest">{activeOrder.deliveryOtp}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Action button (only when ready/picked_up/on_the_way) */}
               {STATUS_FLOW[activeOrder.status] && (
                 <button onClick={() => handleStatusChange(activeOrder.id, STATUS_FLOW[activeOrder.status].next)}
@@ -608,19 +619,53 @@ export default function RiderDashboard() {
               </div>
             </div>
 
-            {/* Other pending deliveries */}
+            {/* Other pending deliveries — with action buttons */}
             {riderOrders.length > 1 && (
               <div className="space-y-2">
                 <p className="text-xs text-faint font-semibold">Queue ({riderOrders.length - 1} more)</p>
                 {riderOrders.slice(1).map(order => (
-                  <div key={order.id} className="glass-sm p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-body">#{order.id} • {order.shopName}</p>
-                      <p className="text-[10px] text-faint">{order.customerName} • ₹{order.total}</p>
+                  <div key={order.id} className="glass-card p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-body">#{order.id} • {order.shopName}</p>
+                        <p className="text-[10px] text-faint">{order.customerName} • ₹{order.total}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold ${STATUS_LABELS[order.status]?.color || ''}`}>
+                        {STATUS_LABELS[order.status]?.label || order.status}
+                      </span>
                     </div>
-                    <span className={`text-[10px] font-bold ${STATUS_LABELS[order.status]?.color || ''}`}>
-                      {STATUS_LABELS[order.status]?.label || order.status}
-                    </span>
+                    {/* Show OTP + Pickup button for ready orders */}
+                    {order.status === 'ready' && (
+                      <div className="space-y-2">
+                        {order.deliveryOtp && (
+                          <div className="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center gap-2">
+                            <Shield size={12} className="text-purple-500" />
+                            <span className="text-[10px] text-muted">Pickup OTP:</span>
+                            <span className="text-sm font-black text-purple-600 tracking-widest">{order.deliveryOtp}</span>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleStatusChange(order.id, 'picked_up')}
+                          className="w-full py-2.5 bg-purple-500 text-white rounded-xl text-xs font-bold hover:bg-purple-600 transition-all active:scale-95">
+                          📦 Order Picked Up
+                        </button>
+                      </div>
+                    )}
+                    {/* Navigate + action for picked_up/in_transit orders */}
+                    {['picked_up', 'on_the_way', 'in_transit'].includes(order.status) && (
+                      <div className="space-y-2">
+                        <a href={`https://www.google.com/maps/dir/?api=1${riderGPS ? `&origin=${riderGPS.lat},${riderGPS.lng}` : ''}&destination=${order.customerLat && order.customerLng ? `${order.customerLat},${order.customerLng}` : encodeURIComponent(order.address?.fullAddress || 'Thanjavur')}&travelmode=driving`}
+                          target="_blank" rel="noopener"
+                          className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold">
+                          <Navigation size={12} /> Navigate to Customer
+                        </a>
+                        <button
+                          onClick={() => handleStatusChange(order.id, 'delivered')}
+                          className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all active:scale-95">
+                          ✅ Mark Delivered (OTP)
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
