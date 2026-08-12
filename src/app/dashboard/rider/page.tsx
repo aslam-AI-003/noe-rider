@@ -581,11 +581,18 @@ export default function RiderDashboard() {
                 </div>
               )}
 
-              {/* Waiting for shop (vendor still preparing) */}
+              {/* Waiting for shop (vendor still preparing) — show Reached Shop button */}
               {['accepted', 'preparing'].includes(activeOrder.status) && (
-                <div className="w-full py-3.5 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-sm font-bold rounded-xl text-center flex items-center justify-center gap-2">
-                  <Clock size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
-                  Waiting for shop to prepare...
+                <div className="space-y-2">
+                  <div className="w-full py-3.5 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-sm font-bold rounded-xl text-center flex items-center justify-center gap-2">
+                    <Clock size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
+                    Waiting for shop to prepare...
+                  </div>
+                  <button
+                    onClick={() => toast.success('✅ Marked as reached shop. Wait for food to be ready.')}
+                    className="w-full py-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl flex items-center justify-center gap-2">
+                    📍 I&apos;ve Reached the Shop
+                  </button>
                 </div>
               )}
 
