@@ -64,16 +64,19 @@ export function listenAvailableOrders(area: string, callback: (orders: NoxOrder[
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // LISTEN MY ACTIVE DELIVERY — Rider's current active orders
+// Since rider accept doesn't change status, we listen for riderId == me
+// with all active statuses (accepted/preparing/ready/picked_up/in_transit)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export function listenMyDelivery(riderId: string, callback: (orders: NoxOrder[]) => void): () => void {
   const firestore = getDb();
   if (!firestore) { callback([]); return () => {}; }
 
-  // rider_assigned = just accepted, picked_up = picked from shop, in_transit/on_the_way = heading to customer
+  // Rider's orders = any order where riderId is set to me AND not delivered/cancelled
   const q = query(
     collection(firestore, 'orders'),
     where('riderId', '==', riderId),
-    where('status', 'in', ['rider_assigned', 'picked_up', 'in_transit', 'on_the_way'])
+    where('status', 'in', ['accepted', 'preparing', 'ready', 'picked_up', 'in_transit', 'on_the_way']),
+    limit(10)
   );
 
   return onSnapshot(q, (snapshot: any) => {
@@ -87,6 +90,8 @@ export function listenMyDelivery(riderId: string, callback: (orders: NoxOrder[])
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ACCEPT DELIVERY — Rider accepts a delivery
+// NOTE: Does NOT change order status! Vendor continues their own flow.
+// Rider just gets assigned while vendor prepares in parallel.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export async function acceptDelivery(
   orderId: string,
@@ -111,22 +116,25 @@ export async function acceptDelivery(
     }
 
     const updatedTimeline = [...order.timeline, {
-      status: 'rider_assigned' as NoxOrderStatus,
+      status: order.status as NoxOrderStatus, // Keep current status (don't change to rider_assigned)
       timestamp: new Date().toISOString(),
-      note: `Rider ${riderName} assigned`,
+      note: `Rider ${riderName} assigned — heading to shop`,
       updatedBy: riderId,
     }];
 
+    // Only set riderId/riderName/riderPhone — DO NOT change order status!
+    // Vendor continues: accepted → preparing → ready (independently)
+    // Rider travels to shop in parallel
     await updateDoc(orderRef, {
       riderId,
       riderName,
       riderPhone,
-      status: 'rider_assigned',
+      // status NOT changed — vendor flow continues independently
       updatedAt: serverTimestamp(),
       timeline: updatedTimeline,
     });
 
-    console.log('✅ Delivery accepted:', orderId);
+    console.log('✅ Rider assigned (status unchanged):', orderId, '— current status:', order.status);
     return true;
   } catch (error) {
     console.error('Error accepting delivery:', error);

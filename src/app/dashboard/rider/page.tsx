@@ -29,12 +29,16 @@ const STATUS_FLOW: Record<string, { next: DemoOrder['status']; label: string; co
   ready:      { next: 'picked_up', label: '📦 Pick Up Order', color: 'bg-purple-500' },
   picked_up:  { next: 'on_the_way', label: '🚴 Start Delivery', color: 'bg-blue-500' },
   on_the_way: { next: 'delivered', label: '✅ Mark Delivered (OTP)', color: 'bg-emerald-500' },
+  in_transit: { next: 'delivered', label: '✅ Mark Delivered (OTP)', color: 'bg-emerald-500' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  ready:      { label: '📦 Ready for Pickup', color: 'text-orange-600 dark:text-[#0E9F6E]' },
+  accepted:   { label: '🍳 Shop Preparing', color: 'text-orange-600 dark:text-orange-400' },
+  preparing:  { label: '🍳 Shop Preparing', color: 'text-orange-600 dark:text-orange-400' },
+  ready:      { label: '📦 Ready for Pickup', color: 'text-green-600 dark:text-[#0E9F6E]' },
   picked_up:  { label: '🏃 Picked Up', color: 'text-purple-600 dark:text-purple-400' },
   on_the_way: { label: '🛵 On the Way', color: 'text-blue-600 dark:text-blue-400' },
+  in_transit: { label: '🛵 On the Way', color: 'text-blue-600 dark:text-blue-400' },
   delivered:  { label: '✅ Delivered', color: 'text-emerald-600 dark:text-emerald-400' },
 };
 
@@ -120,9 +124,9 @@ export default function RiderDashboard() {
   const [availableOrders, setAvailableOrders] = useState<any[]>([]);
   const [myOrders, setMyOrders] = useState<any[]>([]);
 
-  // Rider sees orders assigned to them (ready, picked_up, on_the_way)
+  // Rider sees ALL their assigned orders (vendor still preparing OR ready for pickup OR in delivery)
   const riderOrders = myOrders.filter(o =>
-    ['ready', 'picked_up', 'on_the_way'].includes(o.status)
+    ['accepted', 'preparing', 'ready', 'picked_up', 'on_the_way', 'in_transit'].includes(o.status)
   );
   const deliveredOrders = myOrders.filter(o => o.status === 'delivered');
   const activeOrder = riderOrders[0];
@@ -579,7 +583,15 @@ export default function RiderDashboard() {
                 </div>
               )}
 
-              {/* Action button */}
+              {/* Waiting for shop (vendor still preparing) */}
+              {['accepted', 'preparing'].includes(activeOrder.status) && (
+                <div className="w-full py-3.5 bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-sm font-bold rounded-xl text-center flex items-center justify-center gap-2">
+                  <Clock size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
+                  Waiting for shop to prepare...
+                </div>
+              )}
+
+              {/* Action button (only when ready/picked_up/on_the_way) */}
               {STATUS_FLOW[activeOrder.status] && (
                 <button onClick={() => handleStatusChange(activeOrder.id, STATUS_FLOW[activeOrder.status].next)}
                   className={`w-full ${STATUS_FLOW[activeOrder.status].color} text-white text-sm font-bold py-3.5 rounded-xl transition-all hover:opacity-90 active:scale-[0.98] shadow-lg flex items-center justify-center gap-2`}>
