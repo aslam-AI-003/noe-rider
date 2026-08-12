@@ -559,11 +559,11 @@ export default function RiderDashboard() {
                     )}
                   </div>
                   {/* Navigate to Customer button */}
-                  {['picked_up', 'on_the_way'].includes(activeOrder.status) && (
-                    <a href={`https://www.google.com/maps/dir/?api=1${riderGPS ? `&origin=${riderGPS.lat},${riderGPS.lng}` : ''}&destination=${encodeURIComponent(activeOrder.address.fullAddress)}&travelmode=driving`}
+                  {['picked_up', 'on_the_way', 'in_transit'].includes(activeOrder.status) && (
+                    <a href={`https://www.google.com/maps/dir/?api=1${riderGPS ? `&origin=${riderGPS.lat},${riderGPS.lng}` : ''}&destination=${activeOrder.customerLat && activeOrder.customerLng ? `${activeOrder.customerLat},${activeOrder.customerLng}` : encodeURIComponent(activeOrder.address.fullAddress)}&travelmode=driving`}
                       target="_blank" rel="noopener"
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20">
-                      <Navigation size={12} /> Navigate to Customer
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/20">
+                      <Navigation size={14} /> 🗺️ Navigate to Customer
                     </a>
                   )}
                 </div>
