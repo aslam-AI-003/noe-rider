@@ -523,13 +523,11 @@ export default function RiderDashboard() {
                     <p className="text-xs font-bold text-body">Pickup: {activeOrder.shopName}</p>
                     <p className="text-[10px] text-faint">📍 Shop location</p>
                   </div>
-                  {['accepted', 'preparing', 'ready'].includes(activeOrder.status) && (
-                    <a href={`https://www.google.com/maps/dir/?api=1${riderGPS ? `&origin=${riderGPS.lat},${riderGPS.lng}` : ''}&destination=${activeOrder.shopLat && activeOrder.shopLng ? `${activeOrder.shopLat},${activeOrder.shopLng}` : encodeURIComponent(activeOrder.shopName + ' Thanjavur')}&travelmode=driving`}
-                      target="_blank" rel="noopener"
-                      className="px-3 py-2 bg-blue-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-lg shadow-blue-500/20">
-                      <Navigation size={10} /> Navigate
-                    </a>
-                  )}
+                  <a href={`https://www.google.com/maps/dir/?api=1${riderGPS ? `&origin=${riderGPS.lat},${riderGPS.lng}` : ''}&destination=${activeOrder.shopLat && activeOrder.shopLng ? `${activeOrder.shopLat},${activeOrder.shopLng}` : encodeURIComponent(activeOrder.shopName + ' Thanjavur')}&travelmode=driving`}
+                    target="_blank" rel="noopener"
+                    className="px-3 py-2 bg-blue-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-lg shadow-blue-500/20">
+                    <Navigation size={10} /> Navigate
+                  </a>
                 </div>
 
                 {/* Arrow */}
